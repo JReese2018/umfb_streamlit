@@ -1,0 +1,9 @@
+get list of lifts wanted in the report
+build table in dataverse
+
+name
+date
+time
+lift
+value (weight)
+team

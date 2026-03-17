@@ -1,4 +1,3 @@
-from sqlalchemy import create_engine, text
 import pandas as pd
 
 ## Player Force Plate Data
@@ -12,6 +11,7 @@ def get_player_force_plate_data(playerid):
     player_peak_cmj = cmj_df.sort_values(['Jump Height']).tail(1)
     player_peak_cmj_jump = player_peak_cmj['Jump Height'].iloc[0]
     player_peak_cmj_date = player_peak_cmj['Date'].iloc[0]
+    player_peak_cmj_date = pd.to_datetime(player_peak_cmj_date)
     return player_peak_cmj_jump, player_peak_cmj_date, cmj_df
 
 ## Position Force Plate Data (2025)
@@ -104,8 +104,9 @@ def get_max_for_exercise(df, exercise_id):
             raise ValueError("No data for this exercise")
 
         best_row = subset.sort_values(['Weight (lbs)']).tail(1).iloc[0]
-        weight = best_row['Weight (lbs)']
-        date = best_row['Date'].strftime("%m/%d/%Y")
+        weight = round(best_row['Weight (lbs)'])
+        #date = best_row['Date'].strftime("%m/%d/%Y")
+        date = pd.to_datetime(best_row['Date']).strftime("%m/%d/%Y")
 
     except Exception:
         weight = 0
@@ -115,21 +116,28 @@ def get_max_for_exercise(df, exercise_id):
 
 ## Filter Dates
 def filter_dates(df, selected_date):
+    df['Date'] = pd.to_datetime(df['Date'])
+    selected_date = pd.to_datetime(selected_date)
     filtered_data = round(df[(df['Date'] >= selected_date[0]) & (df['Date'] <= selected_date[1])], 2)
     filtered_data['Date'] = pd.to_datetime(filtered_data['Date']).dt.strftime("%m/%d/%Y")
     return filtered_data
 
 ## Percentiles
 def get_percentile_data(df:pd.DataFrame, playerid:int, exercise:int=None):
+    df = df.reset_index()
     if 'exerciseID' in df.columns:
         try:
-            percentile = round(df.loc[df['exerciseID'] == exercise].groupby(['playerID']).max(numeric_only=True)['Weight (lbs)'].rank(pct=True).reset_index().loc[df['playerID'] == playerid]['Weight (lbs)'].iloc[0]*100)
+            df = df.loc[df['exerciseID'] == exercise].groupby(['playerID']).max(numeric_only=True)['Weight (lbs)']
+            df = df.rank(pct=True).reset_index()
+            percentile = round(df.loc[df['playerID'] == playerid]['Weight (lbs)'].iloc[0]*100)
         except IndexError:
             percentile = 0
     ## CMJ
     else:
         try:
-            percentile = round(df.groupby(['playerID']).max(numeric_only=True)['Jump Height'].rank(pct=True).reset_index().loc[df['playerID'] == playerid]['Jump Height'].iloc[0]*100)
+            df = df.groupby(['playerID']).max(numeric_only=True)['Jump Height']
+            df = df.rank(pct=True).reset_index()
+            percentile = round(df.loc[df['playerID'] == playerid]['Jump Height'].iloc[0]*100)
         except IndexError:
             percentile = 0
     return percentile

@@ -96,6 +96,7 @@ if st.session_state.get('authentication_status'):
     position_cmj_df = position_cmj_df.sort_values(['Jump Height']).tail(1)
     highest_position_jump = position_cmj_df['Jump Height'].iloc[0]
     highest_position_date = position_cmj_df['Date'].iloc[0]
+    highest_position_date = pd.to_datetime(highest_position_date)
     highest_position_player = position_cmj_df['playerID'].iloc[0]
     highest_position_player = player_df.loc[player_df['playerID'] == highest_position_player]['Player'].iloc[0]
     split_name = highest_position_player.split()
@@ -122,7 +123,7 @@ if st.session_state.get('authentication_status'):
     ## Baseline Data and Player Max Weight Room data
     ## Try blocks are new
     try:
-        latest_weight = body_weight_df.tail(1)['Weight'].iloc[0]
+        latest_weight = round(body_weight_df.tail(1)['Weight'].iloc[0])
     except:
         latest_weight = None
     try:
@@ -135,6 +136,7 @@ if st.session_state.get('authentication_status'):
         latest_hydration = None
     try:
         latest_hydration_date = hydration_df.tail(1)['Date'].iloc[0]
+        latest_hydration_date = pd.to_datetime(latest_hydration_date)
     except:
         latest_hydration_date = None
     data = {'Metric' : ['Body Weight (lbs)', 'Body Fat (%)', 'Latest Hydration Status'], 'Value' : [latest_weight, latest_bf, latest_hydration]}
@@ -177,7 +179,6 @@ if st.session_state.get('authentication_status'):
         st.dataframe(data=max_df, hide_index=True)
 
     ## Hydration
-    print(type(latest_hydration_date))
     st.subheader('Latest Hydration Status:')
     st.subheader(f"{latest_hydration} on {latest_hydration_date.strftime("%m/%d/%Y")}")
 
@@ -204,7 +205,7 @@ if st.session_state.get('authentication_status'):
         None
 
     hydration_url = "https://www.google.com"
-    st.write("Stay game-ready: learn how to optimize your hydration [here](%s)." % hydration_url)
+    st.write("Stay game-ready. Learn how to optimize your hydration [here](%s)." % hydration_url)
     st.caption(':blue[DEV NOTE]: This goes to Google for now until we get a resource(s) that is good for the athletes to look at.')
 
     st.title('Physical Data')
@@ -213,8 +214,8 @@ if st.session_state.get('authentication_status'):
     date_max = today
     default_min = today - datetime.timedelta(days=30)
     
-    selected_date = st.slider(label="Select Date Range", min_value=date_min,max_value=date_max,value=(default_min, date_max))
-    st.caption("This slider affects all of the graphs (Defaults to the last 30 days)")
+    selected_date = st.slider(label="Select Date Range", min_value=date_min,max_value=date_max,value=(datetime.date(2025, 6, 1), datetime.date(2025, 8, 1)))
+    st.caption("This slider affects all of the graphs (Pre determined date has been filled to reflect data. Ideally, this would defaults to the last 30 days)")
 
     ## Filtering dates
     cmj_filtered_data = filter_dates(cmj_df, selected_date)
@@ -230,6 +231,7 @@ if st.session_state.get('authentication_status'):
 
     ## Jump Height Graph
     st.header('Jump Height Data')
+    cmj_filtered_data = cmj_filtered_data.sort_values(['Date']).groupby(['Date']).mean().reset_index()
     try:
         if cmj_filtered_data.empty:
             raise IndexError
